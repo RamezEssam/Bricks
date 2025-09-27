@@ -1,1 +1,1 @@
-emcc "F:\Bricks\Bricks\main.cpp" "F:\Bricks\Bricks\game.cpp" -I "F:\Bricks\thirdparty\raylib-5.5_win64_msvc16\include\" "F:\raylib\src\libraylib.a" -o "F:\Bricks\web\index.html" -O2 -s USE_GLFW=3 -s FULL_ES2=1 -s ALLOW_MEMORY_GROWTH=1 -s ASYNCIFY --shell-file "F:\Bricks\web\shell.html"
+emcc "F:\Bricks\Bricks\main.cpp" "F:\Bricks\Bricks\game.cpp" -I "F:\Bricks\thirdparty\raylib-5.5_win64_msvc16\include\" "F:\raylib\src\libraylib.a" -o "F:\Bricks\docs\index.html" -O2 -s USE_GLFW=3 -s FULL_ES2=1 -s ALLOW_MEMORY_GROWTH=1 -s ASYNCIFY --shell-file "F:\Bricks\docs\shell.html"
