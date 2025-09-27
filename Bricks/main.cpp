@@ -1,4 +1,3 @@
-#include <iostream>
 #include <random>
 #include "raylib.h"
 #include "game.h"
@@ -128,8 +127,6 @@ int main() {
 
 
     while (!WindowShouldClose()) {
-
-        std::cout << game.GetGameState().ballsReturned << " - " <<  game.GetGameState().numBallsReturned << "\n";
 
         if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && game.GetGameState().ballsReturned) {
 
