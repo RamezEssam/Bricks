@@ -10,7 +10,7 @@ namespace Bricks {
 	}
 
 	GameState Game::GetGameState() const {
-		return Game::gameState;
+		return this->gameState;
 	}
 
 	void Game::SetGameState(GameState s) {
@@ -19,133 +19,140 @@ namespace Bricks {
 
 	// ---------------------------   CanonBall  --------------------------------------------------------
 	CanonBall::CanonBall(Vector2 pos, Vector2 dir, float r, Color c, int lag) {
-		CanonBall::pos = pos;
-		CanonBall::dir = dir;
-		CanonBall::radius = r;
-		CanonBall::velocity = 0.0f;
-		CanonBall::color = c;
-		CanonBall::lag = lag;
-		CanonBall::state = BallState::Resting;
-		CanonBall::prev_state = BallState::Resting;
+		this->pos = pos;
+		this->dir = dir;
+		this->radius = r;
+		this->velocity = 0.0f;
+		this->color = c;
+		this->lag = lag;
+		this->state = BallState::Resting;
+		this->prev_state = BallState::Resting;
 	}
 
 	void CanonBall::Move(float v, Vector2 dir) {
 		
-		CanonBall::pos.x += dir.x * v;
-		CanonBall::pos.y += dir.y * v;
-		CanonBall::dir = dir;
-		CanonBall::velocity = v;
+		this->pos.x += dir.x * v * GetFrameTime();
+		this->pos.y += dir.y * v * GetFrameTime();
+		this->dir = dir;
+		this->velocity = v;
 	}
 
 	Vector2 CanonBall::GetPos() const {
-		return CanonBall::pos;
+		return this->pos;
 	}
 
 	void CanonBall::SetPos(Vector2 pos) {
-		CanonBall::pos = pos;
+		this->pos = pos;
 	}
 
 	Vector2 CanonBall::GetDir() const {
-		return CanonBall::dir;
+		return this->dir;
 	}
 
 	void CanonBall::SetDir(Vector2 dir) {
-		CanonBall::dir = dir;
+		this->dir = dir;
 	}
 
 	float CanonBall::GetVelocity() const {
-		return CanonBall::velocity;
+		return this->velocity;
 	}
 
 	void CanonBall::SetVelocity(float v) {
-		CanonBall::velocity = v;
+		this->velocity = v;
 	}
 
 	float CanonBall::GetRadius() const {
-		return CanonBall::radius;
+		return this->radius;
 	}
 
 	void CanonBall::SetRadius(float r) {
-		CanonBall::radius = r;
+		this->radius = r;
 	}
 
 	Color CanonBall::GetColor() const {
-		return CanonBall::color;
+		return this->color;
 	}
 
 	void CanonBall::SetColor(Color c) {
-		CanonBall::color = c;
+		this->color = c;
 	}
 
 	float CanonBall::GetLag() const {
-		return CanonBall::lag;
+		return this->lag;
 	}
 
 	void CanonBall::SetLag(float lag) {
-		if (CanonBall::lag >= 0) {
-			CanonBall::lag = lag;
+		if (this->lag >= 0) {
+			this->lag= lag;
 		}
 	}
 
 	void CanonBall::SetState(Bricks::BallState s) {
-		CanonBall::state = s;
+		this->state = s;
 	}
 
 	BallState CanonBall::GetState() const {
-		return CanonBall::state;
+		return this->state;
 	}
 
 	void CanonBall::SetPrevState(Bricks::BallState s) {
-		CanonBall::prev_state = s;
+		this->prev_state = s;
 	}
 
 	BallState CanonBall::GetPrevState() const {
-		return CanonBall::prev_state;
+		return this->prev_state;
 	}
 
 
 	// ---------------------------   Brick  --------------------------------------------------------
+	Brick::Brick() {
+		this->health = 0;
+		this->length = 0;
+		this->color = {};
+		this->pos = {};
+		this->state = BrickState::Dead;
+	}
 	Brick::Brick(int length, int health, Color color, Vector2 pos) {
-		Brick::health = health;
-		Brick::length = length;
-		Brick::color = color;
-		Brick::pos = pos;
-		Brick::state = BrickState::Alive;
+		this->health = health;
+		this->length = length;
+		this->color = color;
+		this->pos = pos;
+		this->state = BrickState::Alive;
 	}
 
 	int Brick::GetLength() const {
-		return Brick::length;
+		return this->length;
 	}
 
 	int Brick::GetHealth() const {
-		return Brick::health;
+		return this->health;
 	}
 
 	Color Brick::GetColor() const {
-		return Brick::color;
+		return this->color;
 	}
 
 	Vector2 Brick::GetPos() const {
-		return Brick::pos;
+		return this->pos;
 	}
 
 	void Brick::SetLength(int l) {
-		Brick::length = l;
+		this->length = l;
 	}
 
 	void Brick::SetHealth(int h) {
-		Brick::health = h;
+		this->health = h;
 	}
 
 	void Brick::SetColor(Color c) {
-		Brick::color = c;
+		this->color = c;
 	}
 
 	void Brick::SetState(BrickState s) {
-		Brick::state = s;
+		this->state = s;
 	}
 
 	BrickState Brick::GetState() const {
-		return Brick::state;
+		return this->state;
 	}
 }

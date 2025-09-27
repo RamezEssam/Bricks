@@ -82,8 +82,9 @@ namespace Bricks {
 		Vector2 pos;
 		BrickState state;
 	public:
-		Brick(int length, int health, Color color, Vector2 pos);
+		Brick();
 
+		Brick(int length, int health, Color color, Vector2 pos);
 		int GetLength() const;
 
 		int GetHealth() const;
