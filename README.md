@@ -5,6 +5,9 @@ You launch multiple balls toward bricks; they bounce around and return to the st
 Your goal is to clear all the bricks on the board!
 
 ---
+Play the game on your browser here! [Game](https://ramezessam.github.io/Bricks/)
+
+---
 
 ## 📸 Demo / Screenshots
 
