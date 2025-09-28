@@ -56,12 +56,149 @@ bool floatEqual(float a, float b) {
     return std::fabs(a - b) < EPSILON;
 }
 
+bool CheckCirclePointCollision(Vector2 circlePos, float r, Vector2 point) {
+    float dx = circlePos.x - point.x;
+    float dy = circlePos.y - point.y;
+    return (dx * dx + dy * dy) <= r * r;
+}
+
+void ReflectFromPoint(Bricks::CanonBall& ball, Vector2 point) {
+    Vector2 pos = ball.GetPos();
+    Vector2 normal = { pos.x - point.x, pos.y - point.y };
+
+    float len = sqrtf(normal.x * normal.x + normal.y * normal.y);
+    if (len == 0) return; // ball center exactly at corner
+    normal.x /= len;
+    normal.y /= len;
+
+    Vector2 dir = ball.GetDir();
+    float dot = dir.x * normal.x + dir.y * normal.y;
+
+    Vector2 newDir = {
+        dir.x - 2 * dot * normal.x,
+        dir.y - 2 * dot * normal.y
+    };
+
+    ball.SetDir(newDir);
+    ball.SetPos({ point.x + normal.x * ball.GetRadius(),
+                  point.y + normal.y * ball.GetRadius() });
+}
+
+
+bool CheckCircleRecCollision(Bricks::CanonBall& ball, Bricks::Brick& brick) {
+    Vector2 pos = ball.GetPos();
+    float r = ball.GetRadius();
+
+    float left = brick.GetPos().x;
+    float right = brick.GetPos().x + brick.GetLength();
+    float top = brick.GetPos().y;
+    float bottom = brick.GetPos().y + brick.GetLength();
+
+    // --- Left side ---
+    if (pos.x + r >= left &&
+        pos.x < left &&  // ensure ball is really on the left side
+        pos.y + r >= top &&
+        pos.y - r <= bottom) {
+        ball.SetPos({ left - r, pos.y });
+        ball.SetDir({ -ball.GetDir().x, ball.GetDir().y });
+        return true;
+    }
+
+    // --- Right side ---
+    if (pos.x - r <= right &&
+        pos.x > right &&  // ensure ball is really on the right side
+        pos.y + r >= top &&
+        pos.y - r <= bottom) {
+        ball.SetPos({ right + r, pos.y });
+        ball.SetDir({ -ball.GetDir().x, ball.GetDir().y });
+        return true;
+    }
+
+    // --- Top side ---
+    if (pos.y + r >= top &&
+        pos.y < top &&  // ensure ball is really above
+        pos.x + r >= left &&
+        pos.x - r <= right) {
+        ball.SetPos({ pos.x, top - r });
+        ball.SetDir({ ball.GetDir().x, -ball.GetDir().y });
+        return true;
+    }
+
+    // --- Bottom side ---
+    if (pos.y - r <= bottom &&
+        pos.y > bottom &&  // ensure ball is really below
+        pos.x + r >= left &&
+        pos.x - r <= right) {
+        ball.SetPos({ pos.x, bottom + r });
+        ball.SetDir({ ball.GetDir().x, -ball.GetDir().y });
+        return true;
+    }
+
+    // --- Corners ---
+    // Top-left corner
+    if (CheckCirclePointCollision(pos, r, { left, top })) {
+        ReflectFromPoint(ball, { left, top });
+        return true;
+    }
+    // Top-right corner
+    if (CheckCirclePointCollision(pos, r, { right, top })) {
+        ReflectFromPoint(ball, { right, top });
+        return true;
+    }
+    // Bottom-left corner
+    if (CheckCirclePointCollision(pos, r, { left, bottom })) {
+        ReflectFromPoint(ball, { left, bottom });
+        return true;
+    }
+    // Bottom-right corner
+    if (CheckCirclePointCollision(pos, r, { right, bottom })) {
+        ReflectFromPoint(ball, { right, bottom });
+        return true;
+    }
+
+    return false;
+}
+
+
+void HandleCircleBoundsCollision(Bricks::CanonBall& ball, Vector2 startPos) {
+    // Left boundary
+    if (ball.GetPos().x - ball.GetRadius() <= PADDING) {
+        ball.SetPos({ ball.GetRadius() + PADDING, ball.GetPos().y });
+        ball.SetDir({ -ball.GetDir().x, ball.GetDir().y });
+    }
+    // Right boundary
+    if (ball.GetPos().x + ball.GetRadius() >= SCREEN_WIDTH - PADDING) {
+        ball.SetPos({ SCREEN_WIDTH - PADDING - ball.GetRadius(), ball.GetPos().y });
+        ball.SetDir({ -ball.GetDir().x, ball.GetDir().y });
+    }
+
+    // Top boundary
+    if (ball.GetPos().y - ball.GetRadius() <= PADDING) {
+        ball.SetPos({ ball.GetPos().x, ball.GetRadius() + PADDING });
+        ball.SetDir({ ball.GetDir().x, -ball.GetDir().y });
+    }
+
+    // Bottom boundary
+    if (ball.GetPos().y + ball.GetRadius() >= SCREEN_HEIGHT - PADDING) {
+        ball.SetPos({ ball.GetPos().x, SCREEN_HEIGHT - PADDING - ball.GetRadius() });
+
+        // Instead of bouncing, reset ball state
+        ball.SetState(Bricks::BallState::Return);
+        ball.SetPrevState(Bricks::BallState::Flight);
+
+        Vector2 dir = { startPos.x - ball.GetPos().x, startPos.y - ball.GetPos().y };
+        dir = NormalizeVector(dir);
+        ball.SetDir(dir);
+    }
+}
+
+
 
 
 int main() {
     // Initialize window
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Bricks");
-    SetTargetFPS(60);
+    SetTargetFPS(200);
 
     Bricks::Game game;
 
@@ -87,7 +224,7 @@ int main() {
           , WHITE
           , i * 0.05
         );
-        ball.SetVelocity(600.0f);
+        ball.SetVelocity(5.0f);
         balls.emplace_back(ball);
     }
 
@@ -187,130 +324,29 @@ int main() {
                     game.SetBallsState(false);
                 }
 
-
-                if (CheckCollisionCircleLine(balls[i].GetPos(), balls[i].GetRadius(), { PADDING,PADDING + (SCREEN_HEIGHT - (2 * PADDING)) }, { PADDING + (SCREEN_WIDTH - (2 * PADDING)),PADDING + (SCREEN_HEIGHT - (2 * PADDING)) }) && balls[i].GetState() == Bricks::BallState::Flight) {
-                    balls[i].SetState(Bricks::BallState::Return);
-                    balls[i].SetPrevState(Bricks::BallState::Flight);
-                    Vector2 dir = { startPos.x - balls[i].GetPos().x, startPos.y - balls[i].GetPos().y };
-                    dir = NormalizeVector(dir);
-                    balls[i].SetDir(dir);
-                }
-
                 if (CheckCollisionPointCircle(startPos, balls[i].GetPos(), balls[i].GetRadius()) && (balls[i].GetState() == Bricks::BallState::Return || balls[i].GetState() == Bricks::BallState::Flight)) {
                     balls[i].SetState(Bricks::BallState::Resting);
                     balls[i].SetPrevState(Bricks::BallState::Return);
                     balls[i].SetPos(startPos);
                 }
 
-                // Collision with left vertical boundary
-                if (CheckCollisionCircleLine(balls[i].GetPos(), balls[i].GetRadius(), { PADDING,PADDING }, { PADDING,PADDING + (SCREEN_HEIGHT - (2 * PADDING)) })) {
-                    if (game.GetGameState().bricksALive == 0) {
-                        Vector2 dir = { startPos.x - balls[i].GetPos().x, startPos.y - balls[i].GetPos().y };
-                        dir = NormalizeVector(dir);
-                        balls[i].SetDir(dir);
-                    }
-                    else {
-                        balls[i].SetDir({ -balls[i].GetDir().x, balls[i].GetDir().y });
-                    }
-                }
-
-                // Collision with top horizontal boundary
-                if (CheckCollisionCircleLine(balls[i].GetPos(), balls[i].GetRadius(), { PADDING,PADDING }, { PADDING + (SCREEN_WIDTH - (2 * PADDING)),PADDING })) {
-                    if (game.GetGameState().bricksALive == 0) {
-                        Vector2 dir = { startPos.x - balls[i].GetPos().x, startPos.y - balls[i].GetPos().y };
-                        dir = NormalizeVector(dir);
-                        balls[i].SetDir(dir);
-                    }
-                    else {
-                        balls[i].SetDir({ balls[i].GetDir().x, -balls[i].GetDir().y });
-                    }
-
-                }
-
-                // Collision with right vertical boundary
-                if (CheckCollisionCircleLine(balls[i].GetPos(), balls[i].GetRadius(), { PADDING + (SCREEN_WIDTH - (2 * PADDING)),PADDING }, { PADDING + (SCREEN_WIDTH - (2 * PADDING)),PADDING + (SCREEN_HEIGHT - (2 * PADDING)) })) {
-                    if (game.GetGameState().bricksALive == 0) {
-                        Vector2 dir = { startPos.x - balls[i].GetPos().x, startPos.y - balls[i].GetPos().y };
-                        dir = NormalizeVector(dir);
-                        balls[i].SetDir(dir);
-                    }
-                    else {
-                        balls[i].SetDir({ -balls[i].GetDir().x, balls[i].GetDir().y });
-                    }
-                }
+                HandleCircleBoundsCollision(balls[i], startPos);
 
                 
                 for (int j = 0; j < 64; ++j) {
 
                     if (bricks[j].GetState() == Bricks::BrickState::Alive) {
 
-                        if (CheckCollisionCircleRec(balls[i].GetPos(), balls[i].GetRadius(), { bricks[j].GetPos().x, bricks[j].GetPos().y, (float)bricks[j].GetLength(), (float)bricks[j].GetLength() })) {
-                            // Collision with brick top horizontal side
-                            if (CheckCollisionCircleLine(
-                                balls[i].GetPos(),
-                                balls[i].GetRadius(),
-                                { bricks[j].GetPos().x, bricks[j].GetPos().y },
-                                { bricks[j].GetPos().x + bricks[j].GetLength(),bricks[j].GetPos().y }
-                            )) {
-                                balls[i].SetDir({ balls[i].GetDir().x, -balls[i].GetDir().y });
-                                bricks[j].SetHealth(bricks[j].GetHealth() - 1);
-                                if (bricks[j].GetHealth() <= 0) {
-                                    bricks[j].SetState(Bricks::BrickState::Dead);
-                                    Bricks::GameState s = game.GetGameState();
-                                    s.bricksALive--;
-                                    game.SetGameState(s);
-                                }
-                            }else
-                            // Collision with brick right vertical side
-                            if (CheckCollisionCircleLine(
-                                balls[i].GetPos(),
-                                balls[i].GetRadius(),
-                                { bricks[j].GetPos().x + bricks[j].GetLength() , bricks[j].GetPos().y },
-                                { bricks[j].GetPos().x + bricks[j].GetLength() ,bricks[j].GetPos().y + bricks[j].GetLength() }
-                            )) {
-                                balls[i].SetDir({ -balls[i].GetDir().x, balls[i].GetDir().y });
-                                bricks[j].SetHealth(bricks[j].GetHealth() - 1);
-                                if (bricks[j].GetHealth() <= 0) {
-                                    bricks[j].SetState(Bricks::BrickState::Dead);
-                                    Bricks::GameState s = game.GetGameState();
-                                    s.bricksALive--;
-                                    game.SetGameState(s);
-                                }
-                            }else
-                            // Collision with brick bottom horizontal side
-                            if (CheckCollisionCircleLine(
-                                balls[i].GetPos(),
-                                balls[i].GetRadius(),
-                                { bricks[j].GetPos().x , bricks[j].GetPos().y + bricks[j].GetLength() },
-                                { bricks[j].GetPos().x + bricks[j].GetLength(),bricks[j].GetPos().y + bricks[j].GetLength() }
-                            )) {
-                                balls[i].SetDir({ balls[i].GetDir().x, -balls[i].GetDir().y });
-                                bricks[j].SetHealth(bricks[j].GetHealth() - 1);
-                                if (bricks[j].GetHealth() <= 0) {
-                                    bricks[j].SetState(Bricks::BrickState::Dead);
-                                    Bricks::GameState s = game.GetGameState();
-                                    s.bricksALive--;
-                                    game.SetGameState(s);
-                                }
-                            }else
-                            // Collision with brick left vertical side
-                            if (CheckCollisionCircleLine(
-                                balls[i].GetPos(),
-                                balls[i].GetRadius(),
-                                { bricks[j].GetPos().x , bricks[j].GetPos().y },
-                                { bricks[j].GetPos().x ,bricks[j].GetPos().y + bricks[j].GetLength() }
-                            )) {
-                                balls[i].SetDir({ -balls[i].GetDir().x, balls[i].GetDir().y });
-                                bricks[j].SetHealth(bricks[j].GetHealth() - 1);
+                        if (CheckCircleRecCollision(balls[i], bricks[j])) {
 
-                                if (bricks[j].GetHealth() <= 0) {
-                                    bricks[j].SetState(Bricks::BrickState::Dead);
-                                    Bricks::GameState s = game.GetGameState();
-                                    s.bricksALive--;
-                                    game.SetGameState(s);
-
-                                }
+                            bricks[j].SetHealth(bricks[j].GetHealth() - 1);
+                            if (bricks[j].GetHealth() <= 0) {
+                                bricks[j].SetState(Bricks::BrickState::Dead);
+                                Bricks::GameState s = game.GetGameState();
+                                s.bricksALive--;
+                                game.SetGameState(s);
                             }
+
                         }
 
                     }

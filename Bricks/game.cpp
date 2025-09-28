@@ -31,8 +31,8 @@ namespace Bricks {
 
 	void CanonBall::Move(float v, Vector2 dir) {
 		
-		this->pos.x += dir.x * v * GetFrameTime();
-		this->pos.y += dir.y * v * GetFrameTime();
+		this->pos.x += dir.x * v;
+		this->pos.y += dir.y * v;
 		this->dir = dir;
 		this->velocity = v;
 	}
